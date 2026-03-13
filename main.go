@@ -6,136 +6,300 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
-type Team struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+type Item struct {
+	ID      int    `json:"id"`
+	Cancion string `json:"cancion"`
+	Album   string `json:"album"`
+	Autor   string `json:"autor"`
+	Genero  string `json:"genero"`
+	Anio    int    `json:"anio"`
+	Sello   string `json:"sello"`
 }
 
-type Message struct {
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type MessageResponse struct {
 	Message string `json:"message"`
 }
 
-var teams []Team
+var items []Item
 
 func main() {
-	loadTeams()
+	loadItems()
 
-	http.HandleFunc("/api/ping", pingHandler)
-	http.HandleFunc("/api/teams", teamsHandler)
+	http.HandleFunc("/api/items", itemsHandler)
+	http.HandleFunc("/api/items/", itemByIDHandler)
 
-	log.Println("POST JSON API running on :80")
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Println("Ejercicio 4 API running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func loadTeams() {
-	file, err := os.ReadFile("./data/teams.json")
+func loadItems() {
+	file, err := os.ReadFile("./data/items.json")
 	if err != nil {
-		log.Fatal("Error reading file:", err)
+		log.Fatal("error reading file:", err)
 	}
 
-	err = json.Unmarshal(file, &teams)
+	err = json.Unmarshal(file, &items)
 	if err != nil {
-		log.Fatal("Error parsing JSON:", err)
+		log.Fatal("error parsing JSON:", err)
 	}
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	response := Message{
-		Message: "pong",
+func saveItems() {
+	data, err := json.MarshalIndent(items, "", "  ")
+	if err != nil {
+		log.Println("error marshaling JSON:", err)
+		return
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	err = os.WriteFile("./data/items.json", data, 0644)
+	if err != nil {
+		log.Println("error writing file:", err)
+	}
 }
 
-func teamsHandler(w http.ResponseWriter, r *http.Request) {
-
+func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-
 	case http.MethodGet:
-		handleGetTeams(w, r)
-
+		handleGetItems(w, r)
 	case http.MethodPost:
-		handleCreateTeam(w, r)
-
+		handleCreateItem(w, r)
 	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
-func handleGetTeams(w http.ResponseWriter, r *http.Request) {
+func itemByIDHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		handleUpdateItem(w, r)
+	case http.MethodPatch:
+		handlePatchItem(w, r)
+	case http.MethodDelete:
+		handleDeleteItem(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+func handleGetItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	idParam := query.Get("id")
+	autorParam := strings.TrimSpace(query.Get("autor"))
+	generoParam := strings.TrimSpace(query.Get("genero"))
 
-	if idParam == "" {
-		writeJSON(w, http.StatusOK, teams)
+	if idParam != "" {
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid id parameter")
+			return
+		}
+
+		for _, item := range items {
+			if item.ID == id {
+				writeJSON(w, http.StatusOK, item)
+				return
+			}
+		}
+
+		writeError(w, http.StatusNotFound, "item not found")
 		return
 	}
 
-	id, err := strconv.Atoi(idParam)
+	if autorParam == "" && generoParam == "" {
+		writeJSON(w, http.StatusOK, items)
+		return
+	}
+
+	var filtered []Item
+	for _, item := range items {
+		matchAutor := autorParam == "" || strings.EqualFold(item.Autor, autorParam)
+		matchGenero := generoParam == "" || strings.EqualFold(item.Genero, generoParam)
+
+		if matchAutor && matchGenero {
+			filtered = append(filtered, item)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, filtered)
+}
+
+func handleCreateItem(w http.ResponseWriter, r *http.Request) {
+	var newItem Item
+
+	err := json.NewDecoder(r.Body).Decode(&newItem)
 	if err != nil {
-		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
-	for _, team := range teams {
-		if team.ID == id {
-			writeJSON(w, http.StatusOK, team)
+	if err := validateItem(newItem); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	newItem.ID = generateNextID()
+	items = append(items, newItem)
+	saveItems()
+
+	writeJSON(w, http.StatusCreated, newItem)
+}
+
+func handleUpdateItem(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromPath(r.URL.Path)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id in path")
+		return
+	}
+
+	var updated Item
+	err = json.NewDecoder(r.Body).Decode(&updated)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if err := validateItem(updated); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	for i, item := range items {
+		if item.ID == id {
+			updated.ID = id
+			items[i] = updated
+			saveItems()
+			writeJSON(w, http.StatusOK, updated)
 			return
 		}
 	}
 
-	http.Error(w, "Team not found", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "item not found")
 }
 
-func handleCreateTeam(w http.ResponseWriter, r *http.Request) {
-
-	var newTeam Team
-
-	err := json.NewDecoder(r.Body).Decode(&newTeam)
+func handlePatchItem(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromPath(r.URL.Path)
 	if err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid id in path")
 		return
 	}
 
-	if newTeam.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
+	var updates map[string]interface{}
+	err = json.NewDecoder(r.Body).Decode(&updates)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
-	newTeam.ID = generateNextID()
+	for i, item := range items {
+		if item.ID == id {
+			if v, ok := updates["cancion"].(string); ok && strings.TrimSpace(v) != "" {
+				item.Cancion = v
+			}
+			if v, ok := updates["album"].(string); ok && strings.TrimSpace(v) != "" {
+				item.Album = v
+			}
+			if v, ok := updates["autor"].(string); ok && strings.TrimSpace(v) != "" {
+				item.Autor = v
+			}
+			if v, ok := updates["genero"].(string); ok && strings.TrimSpace(v) != "" {
+				item.Genero = v
+			}
+			if v, ok := updates["anio"].(float64); ok && int(v) > 0 {
+				item.Anio = int(v)
+			}
+			if v, ok := updates["sello"].(string); ok && strings.TrimSpace(v) != "" {
+				item.Sello = v
+			}
 
-	teams = append(teams, newTeam)
-	// saveTeams()
+			items[i] = item
+			saveItems()
+			writeJSON(w, http.StatusOK, item)
+			return
+		}
+	}
 
-	writeJSON(w, http.StatusCreated, newTeam)
+	writeError(w, http.StatusNotFound, "item not found")
+}
+
+func handleDeleteItem(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromPath(r.URL.Path)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id in path")
+		return
+	}
+
+	for i, item := range items {
+		if item.ID == id {
+			items = append(items[:i], items[i+1:]...)
+			saveItems()
+			writeJSON(w, http.StatusOK, MessageResponse{Message: "item deleted"})
+			return
+		}
+	}
+
+	writeError(w, http.StatusNotFound, "item not found")
+}
+
+func validateItem(item Item) error {
+	if strings.TrimSpace(item.Cancion) == "" {
+		return newValidationError("cancion is required")
+	}
+	if strings.TrimSpace(item.Album) == "" {
+		return newValidationError("album is required")
+	}
+	if strings.TrimSpace(item.Autor) == "" {
+		return newValidationError("autor is required")
+	}
+	if strings.TrimSpace(item.Genero) == "" {
+		return newValidationError("genero is required")
+	}
+	if item.Anio <= 0 {
+		return newValidationError("anio must be greater than 0")
+	}
+	if strings.TrimSpace(item.Sello) == "" {
+		return newValidationError("sello is required")
+	}
+
+	return nil
+}
+
+func newValidationError(msg string) error {
+	return &validationError{message: msg}
+}
+
+type validationError struct {
+	message string
+}
+
+func (e *validationError) Error() string {
+	return e.message
 }
 
 func generateNextID() int {
 	maxID := 0
-
-	for _, team := range teams {
-		if team.ID > maxID {
-			maxID = team.ID
+	for _, item := range items {
+		if item.ID > maxID {
+			maxID = item.ID
 		}
 	}
-
 	return maxID + 1
 }
 
-// func saveTeams() {
-// 	data, err := json.MarshalIndent(teams, "", "  ")
-// 	if err != nil {
-// 		log.Println("Error marshaling JSON:", err)
-// 		return
-// 	}
+func getIDFromPath(path string) (int, error) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) != 3 {
+		return 0, strconv.ErrSyntax
+	}
 
-// 	err = os.WriteFile("./data/teams.json", data, 0644)
-// 	if err != nil {
-// 		log.Println("Error writing file:", err)
-// 	}
-// }
+	return strconv.Atoi(parts[2])
+}
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -143,6 +307,10 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 
 	err := json.NewEncoder(w).Encode(payload)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
 	}
+}
+
+func writeError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, ErrorResponse{Error: message})
 }
