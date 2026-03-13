@@ -308,3 +308,11 @@ Para detener y eliminar el contenedor:
 ```bash
 docker-compose down
 ```
+
+---
+
+## URL pública del servidor
+
+La API está desplegada y accesible públicamente en:
+
+http://bombardeen-palencia.xyz/vernel/ejercicio_4/api/items
