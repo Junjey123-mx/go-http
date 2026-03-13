@@ -35,8 +35,8 @@ func main() {
 	http.HandleFunc("/api/items", itemsHandler)
 	http.HandleFunc("/api/items/", itemByIDHandler)
 
-	log.Println("Ejercicio 4 API running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("Ejercicio 4 API running on :24584")
+	log.Fatal(http.ListenAndServe(":24584", nil))
 }
 
 func loadItems() {

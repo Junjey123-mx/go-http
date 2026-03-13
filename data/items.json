@@ -1,14 +1,5 @@
 [
   {
-    "id": 1,
-    "cancion": "In The End",
-    "album": "Hybrid Theory",
-    "autor": "Linkin Park",
-    "genero": "Rock",
-    "anio": 2000,
-    "sello": "Warner Bros."
-  },
-  {
     "id": 2,
     "cancion": "Me Estás Tentando",
     "album": "Wisin \u0026 Yandel Presentan: La Mente Maestra",
@@ -83,6 +74,15 @@
   {
     "id": 11,
     "cancion": "Numb",
+    "album": "Meteora",
+    "autor": "Linkin Park",
+    "genero": "Nu Metal",
+    "anio": 2003,
+    "sello": "Warner Bros."
+  },
+  {
+    "id": 12,
+    "cancion": "Somewhere I Belong",
     "album": "Meteora",
     "autor": "Linkin Park",
     "genero": "Nu Metal",
