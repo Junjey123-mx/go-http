@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "cancion": "In The End",
+    "album": "Hybrid Theory",
+    "autor": "Linkin Park",
+    "genero": "Rock",
+    "anio": 2000,
+    "sello": "Warner Bros."
+  },
+  {
+    "id": 2,
+    "cancion": "Me Estás Tentando",
+    "album": "Wisin \u0026 Yandel Presentan: La Mente Maestra",
+    "autor": "Wisin \u0026 Yandel",
+    "genero": "Reggaeton / EDM",
+    "anio": 2008,
+    "sello": "Machete"
+  },
+  {
+    "id": 3,
+    "cancion": "Llamado de Emergencia",
+    "album": "Talento de Barrio",
+    "autor": "Daddy Yankee",
+    "genero": "Reggaeton",
+    "anio": 2008,
+    "sello": "Interscope / El Cartel"
+  },
+  {
+    "id": 4,
+    "cancion": "Legacy",
+    "album": "The Marshall Mathers LP 2",
+    "autor": "Eminem",
+    "genero": "Hip hop",
+    "anio": 2013,
+    "sello": "Shady / Aftermath / Interscope"
+  },
+  {
+    "id": 5,
+    "cancion": "The Message",
+    "album": "2001",
+    "autor": "Dr. Dre",
+    "genero": "West Coast hip-hop / G-funk",
+    "anio": 1999,
+    "sello": "Aftermath / Interscope"
+  },
+  {
+    "id": 6,
+    "cancion": "You Rock My World",
+    "album": "Invincible",
+    "autor": "Michael Jackson",
+    "genero": "R\u0026B / Pop",
+    "anio": 2001,
+    "sello": "Epic"
+  },
+  {
+    "id": 7,
+    "cancion": "False Alarm",
+    "album": "Starboy",
+    "autor": "The Weeknd",
+    "genero": "Dance-punk / Electro-rock",
+    "anio": 2016,
+    "sello": "XO / Republic"
+  },
+  {
+    "id": 8,
+    "cancion": "Oración",
+    "album": "Senderos de traición",
+    "autor": "Héroes del Silencio",
+    "genero": "Rock en español",
+    "anio": 1991,
+    "sello": "EMI"
+  },
+  {
+    "id": 9,
+    "cancion": "Sun Is Up",
+    "album": "I Am the Club Rocker",
+    "autor": "INNA",
+    "genero": "Europop / Rave",
+    "anio": 2010,
+    "sello": "Roton"
+  },
+  {
+    "id": 11,
+    "cancion": "Numb",
+    "album": "Meteora",
+    "autor": "Linkin Park",
+    "genero": "Nu Metal",
+    "anio": 2003,
+    "sello": "Warner Bros."
+  }
+]
